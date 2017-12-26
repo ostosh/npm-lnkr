@@ -1,0 +1,50 @@
+{
+  "name": "npm-lnkr",
+  "version": "0.1.1",
+  "author": "Geoffrey J Ostosh",
+  "license": "MIT",
+  "description": "Solving your npm link issues since 2017",
+  "main": "dist/index.js",
+  "bin": {
+    "lnkr": "bin/bootstrap.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ostosh/lnkr.git"
+  },
+  "keywords": [
+    "npm",
+    "link",
+    "packages",
+    "symlink",
+    "dependencies",
+    "modules"
+  ],
+  "bugs": {
+    "url": "https://github.com/ostosh/lnkr/issues"
+  },
+  "homepage": "https://github.com/ostosh/lnkr",
+  "scripts": {
+    "test": "TODO",
+    "build-bin": "webpack --config webpack.config.bin.js",
+    "build-dist": "webpack",
+    "build-decl": "tsc -p tsconfig.decl.json",
+    "tslint": "tslint -c tslint.json 'lib/**/*.ts' 'tests/**/*.ts'"
+  },
+  "dependencies": {
+    "lodash": "^4.17.4",
+    "commander": "^2.11.0",
+    "debug": "^2.6.8",
+    "promise-map-limit": "^1.0.0",
+    "mkdirp": "^0.5.1",
+    "rimraf": "^2.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^8.0.44",
+    "ts-loader": "^2.3.7",
+    "ts-unit": "^1.0.1"
+  },
+  "engines": {
+    "npm": ">=2.0.0"
+  }
+}
