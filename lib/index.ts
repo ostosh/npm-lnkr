@@ -46,7 +46,7 @@ export const link = (dirPath: string, options: LnkrOptions): Promise<Link[]> => 
   const getLinksFn = options.recursive ? listLinksRecursive : listLinks;
   return readPackage(dirPath)
     .then((pkg: Package) => getLinksFn(pkg, options))
-    .then(filterAllLinksToUnlink)
+    .then(filterAllPathsToRemove)
     .then(unlinkLinks)
     .then(() => readPackage(dirPath))
     .then((pkg: Package) => getLinksFn(pkg, options))
@@ -159,9 +159,9 @@ const filterLinksToUnlink = (links: Link[]): Promise<Link[]> => {
     });
 };
 
-const filterAllLinksToUnlink = (links: Link[]): Promise<Link[]> => {
+const filterAllPathsToRemove = (links: Link[]): Promise<Link[]> => {
   const uniqueLinks: Link[] = uniqBy(links, (lnk: Link) => lnk.from);
-  const linkPromises: Array<Promise<boolean>> = uniqueLinks.map((lnk: Link) => isSymbolicLink(lnk.from));
+  const linkPromises: Array<Promise<boolean>> = uniqueLinks.map((lnk: Link) => isPath(lnk.from));
   return Promise.all(linkPromises).then((isLinkResults: boolean[]) => {
     return filter(uniqueLinks, (lnk, index) => isLinkResults[index] === true);
   });
@@ -294,7 +294,7 @@ const makeLink = (lnk: Link): Promise<Link> => {
 
 const removeLink = (lnk: Link): Promise<Link> => {
   return new Promise((resolve, reject) => {
-    return fs.unlink(lnk.from, (err: Error) => {
+    fs.unlink(lnk.from, (err: Error) => {
       if (err) {
         reject(err);
       } else {
@@ -306,7 +306,7 @@ const removeLink = (lnk: Link): Promise<Link> => {
 
 const removePath = (lnk: Link): Promise<Link> => {
   return new Promise((resolve, reject) => {
-    return rimraf(lnk.from, (err: Error) => {
+    rimraf(lnk.from, (err: Error) => {
       if (err) {
         reject(err);
       } else {
@@ -388,3 +388,20 @@ const isSymbolicLink = (filePath: string): Promise<boolean> => {
     });
   });
 };
+
+const isPath = (filePath: string): Promise<boolean> => {
+  return new Promise((resolve, reject) => {
+    fs.lstat(filePath, (err: NodeJS.ErrnoException, stat: fs.Stats) => {
+      if (err) {
+        if (err.code === 'ENOENT') {
+          return resolve(false);
+        } else {
+          return reject(err);
+        }
+      } else {
+        return resolve(!!stat);
+      }
+    });
+  });
+};
+
