@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es5",
+    "lib": ["es2015", "dom"],
+    "sourceMap": false,
+    "declaration": true,
+    "removeComments": false,
+    "stripInternal": true,
+    "outDir": "./temp/decl"
+  },
+  "exclude": [
+    "node_modules",
+    "tests",
+    "temp",
+    "archive",
+    "./index.d.ts",
+    "./lib/cli.ts"
+  ]
+}
