@@ -1,6 +1,6 @@
 {
   "name": "npm-lnkr",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": "Geoffrey J Ostosh",
   "license": "MIT",
   "description": "Solving your npm link issues since 2017",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ostosh/lnkr.git"
+    "url": "git+https://github.com/ostosh/npm-lnkr.git"
   },
   "keywords": [
     "npm",
@@ -21,9 +21,9 @@
     "modules"
   ],
   "bugs": {
-    "url": "https://github.com/ostosh/lnkr/issues"
+    "url": "https://github.com/ostosh/npm-lnkr/issues"
   },
-  "homepage": "https://github.com/ostosh/lnkr",
+  "homepage": "https://github.com/ostosh/npm-lnkr",
   "scripts": {
     "test": "TODO",
     "build-bin": "webpack --config webpack.config.bin.js",
