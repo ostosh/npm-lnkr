@@ -1,0 +1,23 @@
+{
+  "name": "@test/project-3",
+  "version": "0.2.16",
+  "dependencies": {
+
+  },
+  "peerDependencies": {
+    "@test/project-4": ">=0.2.6",
+    "@test/project-6": ">=0.7.13",
+    "@test/project-5": ">=0.2.7",
+    "@test/project-7": ">=0.2.8",
+    "@test/project-8": ">=0.0.3",
+    "@test/project-9": ">=0.0.4"
+  },
+  "devDependencies": {
+    "@test/project-4": ">=0.2.6",
+    "@test/project-6": ">=0.7.13",
+    "@test/project-5": ">=0.2.7",
+    "@test/project-7": ">=0.2.8",
+    "@test/project-8": ">=0.0.3",
+    "@test/project-9": ">=0.0.4"
+  }
+}

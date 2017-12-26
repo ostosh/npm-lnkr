@@ -1,0 +1,13 @@
+{
+  "name": "@test/project",
+  "version": "0.0.1",
+  "dependencies": {
+    "@test/project-1": "file://./project-1",
+    "@test/project-2": "file://./project-2",
+    "@test/project-3": "file://./project-3",
+    "@test/project-4": "file://./project-4",
+    "@test/project-5": "file://./project-5",
+    "@test/project-6": "file://./project-6",
+    "@test/project-7": "file://./project-7"
+  }
+}

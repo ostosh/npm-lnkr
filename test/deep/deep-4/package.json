@@ -1,0 +1,13 @@
+{
+  "name": "deep-4",
+  "version": "0.0.1",
+  "dependencies": {
+    "deep-1": "file:../deep-1"
+  }
+}
+
+
+
+
+
+

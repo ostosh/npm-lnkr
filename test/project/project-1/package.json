@@ -1,0 +1,14 @@
+{
+  "name": "@test/project-1",
+  "version": "0.0.1",
+  "dependencies": {
+  },
+  "peerDependencies": {
+    "@test/project-4": ">=0.1.20",
+    "@test/project-6": "^0.8.4"
+  },
+  "devDependencies": {
+    "@test/project-4": ">=0.1.20",
+    "@test/project-6": "^0.8.4"
+  }
+}

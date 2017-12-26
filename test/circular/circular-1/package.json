@@ -1,0 +1,7 @@
+{
+  "name": "circular-1",
+  "version": "0.0.1",
+  "dependencies": {
+    "circular-2": "file:../circular-2"
+  }
+}
