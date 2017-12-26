@@ -8,3 +8,8 @@
 ==================
 
   * Package.json link updates
+
+  0.1.4
+==================
+
+  * Readme updates

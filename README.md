@@ -1,11 +1,11 @@
-# lnkr
+# npm-lnkr
 
 ## About
 
 ## Installation
 
 ```
-npm install -g lnkr
+npm install -g npm-lnkr
 ```
 ## Usage
 
@@ -62,9 +62,9 @@ lnkr --help
 
 ## Common Issues
 
-`lnkr` symlinks both dependencies and devDependencies, and ignores peerDependencies and modules packed by NPM (`.tgz`).
+`npm-lnkr` symlinks both dependencies and devDependencies, and ignores peerDependencies and modules packed by NPM (`.tgz`).
 
-`lnkr` does not install non-linked dependencies. To have dependencies installed, use [timoxley/bulk](https://github.com/timoxley/bulk) or `xargs` in a script like:
+`npm-lnkr` does not install non-linked dependencies. To have dependencies installed, use [timoxley/bulk](https://github.com/timoxley/bulk) or `xargs` in a script like:
 ```json
 {
   "name": "my-app",

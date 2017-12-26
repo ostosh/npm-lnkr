@@ -1,6 +1,6 @@
 {
   "name": "npm-lnkr",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "author": "Geoffrey J Ostosh",
   "license": "MIT",
   "description": "Solving your npm link issues since 2017",
