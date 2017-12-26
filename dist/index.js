@@ -186,7 +186,7 @@ exports.link = function (dirPath, options) {
     var getLinksFn = options.recursive ? listLinksRecursive : listLinks;
     return readPackage(dirPath)
         .then(function (pkg) { return getLinksFn(pkg, options); })
-        .then(filterAllLinksToUnlink)
+        .then(filterAllPathsToRemove)
         .then(unlinkLinks)
         .then(function () { return readPackage(dirPath); })
         .then(function (pkg) { return getLinksFn(pkg, options); })
@@ -267,9 +267,9 @@ var filterLinksToUnlink = function (links) {
         return filter(uniqueLinks, function (lnk, index) { return isLinkResults[index] === true; });
     });
 };
-var filterAllLinksToUnlink = function (links) {
+var filterAllPathsToRemove = function (links) {
     var uniqueLinks = uniqBy(links, function (lnk) { return lnk.from; });
-    var linkPromises = uniqueLinks.map(function (lnk) { return isSymbolicLink(lnk.from); });
+    var linkPromises = uniqueLinks.map(function (lnk) { return isPath(lnk.from); });
     return Promise.all(linkPromises).then(function (isLinkResults) {
         return filter(uniqueLinks, function (lnk, index) { return isLinkResults[index] === true; });
     });
@@ -361,7 +361,7 @@ var makeLink = function (lnk) {
 };
 var removeLink = function (lnk) {
     return new Promise(function (resolve, reject) {
-        return fs.unlink(lnk.from, function (err) {
+        fs.unlink(lnk.from, function (err) {
             if (err) {
                 reject(err);
             }
@@ -373,7 +373,7 @@ var removeLink = function (lnk) {
 };
 var removePath = function (lnk) {
     return new Promise(function (resolve, reject) {
-        return rimraf(lnk.from, function (err) {
+        rimraf(lnk.from, function (err) {
             if (err) {
                 reject(err);
             }
@@ -456,6 +456,23 @@ var isSymbolicLink = function (filePath) {
             }
             else {
                 return resolve(false);
+            }
+        });
+    });
+};
+var isPath = function (filePath) {
+    return new Promise(function (resolve, reject) {
+        fs.lstat(filePath, function (err, stat) {
+            if (err) {
+                if (err.code === 'ENOENT') {
+                    return resolve(false);
+                }
+                else {
+                    return reject(err);
+                }
+            }
+            else {
+                return resolve(!!stat);
             }
         });
     });
