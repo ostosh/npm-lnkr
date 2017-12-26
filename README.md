@@ -9,8 +9,6 @@ npm install -g lnkr
 ```
 ## Usage
 
-TODO
-
 #### API
 
 TODO
@@ -86,6 +84,6 @@ Inspired by:
 * [district](https://github.com/hughsk/district)
 * [symlink](https://github.com/clux/symlink)
 
-# License
+## License
 
 MIT
