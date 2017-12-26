@@ -7,9 +7,15 @@
   0.1.3
 ==================
 
-  * Package.json link updates
+  * Update package.json repo links
 
   0.1.4
 ==================
 
-  * Readme updates
+  * Update readme (WIP)
+
+  0.1.5
+==================
+
+  * Add bug fix to remove files, folders and links for target link
+  * Update readme (WIP)
