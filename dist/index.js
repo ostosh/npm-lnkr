@@ -228,7 +228,7 @@ var unlinkLinks = function (links) {
 var listLinksRecursive = function (pkg, options) {
     var packageLinks = {};
     options = options || {};
-    options.cache = {};
+    options.cache = new Map();
     var _listLinksRecursive = function (nextPkg) {
         if (packageLinks.hasOwnProperty(nextPkg.dirPath)) {
             Promise.resolve(packageLinks[nextPkg.dirPath]);
