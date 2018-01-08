@@ -24,3 +24,10 @@
 ==================
 
   * Add package API documentation and update readme
+
+0.1.7
+==================
+
+  * Remove deprecated API spec: LnkrOptions.cwd, LnkrOptions.packages, LnkrOptions.scopeRename
+  * Rename LnkrOptions.cache as LnkrOptions.overrideLinks
+  * Update CLI to account for API changes 
