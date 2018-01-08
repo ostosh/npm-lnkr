@@ -34,32 +34,11 @@ export interface LnkrOptions {
   recursive?: boolean;
 
   /**
-   * Specify packages to link, unlink and list outside of root package.json.
+   * Specify packages.json dependencies to override with links.
    * @name LnkrOptions#cache
    * @type {Map<String, Link>}
    */
-  cache?: Map<string, Link>;
-
-  /**
-   * Deprecated
-   * @name LnkrOptions#cwd
-   * @type {string}
-   */
-  cwd?: string;
-
-  /**
-   * Deprecated
-   * @name LnkrOptions#packages
-   * @type {string[]}
-   */
-  packages?: string[];
-
-  /**
-   * Deprecated
-   * @name LnkrOptions#scopeRename
-   * @type {string}
-   */
-  scopeRename?: string;
+  overrideLinks?: Map<string, Link>;
 }
 
 /**
@@ -231,9 +210,6 @@ const unlinkLinks = (links: Link[]): Promise<Link[]> => {
 
 const listLinksRecursive = (pkg: Package, options: LnkrOptions): Promise<Link[]> => {
   const packageLinks = {};
-  options = options || ({} as LnkrOptions);
-  options.cache = new Map<string, Link>();
-
   const _listLinksRecursive = (nextPkg: Package): Promise<Link[]> => {
     if (packageLinks.hasOwnProperty(nextPkg.dirPath)) {
       Promise.resolve(packageLinks[nextPkg.dirPath]);
@@ -242,7 +218,7 @@ const listLinksRecursive = (pkg: Package, options: LnkrOptions): Promise<Link[]>
         .then((links: Link[]) => {
           packageLinks[nextPkg.dirPath] = packageLinks[nextPkg.dirPath] || [];
           packageLinks[nextPkg.dirPath] = packageLinks[nextPkg.dirPath].concat(links);
-          options.cache = Object.assign({}, options.cache, keyBy(links, 'name'));
+          options.overrideLinks = Object.assign({}, options.overrideLinks, keyBy(links, 'name'));
           const linksToRecurse = links.map((lnk: Link) => lnk.to);
           return map(linksToRecurse, 500, readPackage);
         })
@@ -259,7 +235,7 @@ const listLinksRecursive = (pkg: Package, options: LnkrOptions): Promise<Link[]>
 };
 
 const listLinks = (pkg: Package, options: LnkrOptions): Promise<Link[]> => {
-  const localDependencies = getPackageDependencies(pkg, options);
+  const localDependencies = getPackageLinkedDependencies(pkg, options);
   return map(localDependencies, 500, realPath)
     .then((paths: string[]) => sortBy(uniqBy(paths || [])), (pth: string) => path)
     .then((sortedPaths: string[]) => map(sortedPaths, 500, readPackage))
@@ -283,11 +259,12 @@ const filterAllPathsToRemove = (links: Link[]): Promise<Link[]> => {
   });
 };
 
-const getPackageDependencies = (pkg: Package, options: LnkrOptions): string[] => {
+const getPackageLinkedDependencies = (pkg: Package, options: LnkrOptions): string[] => {
   assert.equal(isObject(pkg), true, 'pkg should be an object');
   const deps = getDependencyMap(pkg);
+
   return Object.keys(deps)
-    .filter((name: string): boolean => isLocalDependency(deps[name], name, options))
+    .filter((name: string): boolean => isLocalDependency(name, pkg, deps, options))
     .map((name) => getLocalDependency(name, pkg, deps, options));
 };
 
@@ -317,57 +294,32 @@ const getLocalDependency = (
   deps: PackageDependencyMap,
   options: LnkrOptions,
 ): string => {
-  if (options && options.cache && options.cache.hasOwnProperty(name)) {
-    return options.cache[name].to;
+  if (options && options.overrideLinks && options.overrideLinks.hasOwnProperty(name)) {
+    return options.overrideLinks[name].to;
   }
+
   let pkgPath = deps[name];
-  pkgPath = pkgPath.replace(/^file:\/\//g, '');
-
-  if (options && options.scopeRename) {
-    return path.resolve(options.cwd, options.scopeRename);
-  }
-
-  if (options && options.packages && options.packages.length > 0) {
-    return path.resolve(options.cwd, name);
-  }
+  pkgPath = pkgPath.replace(/^file:/g, '');
 
   return path.resolve(pkg.dirPath, pkgPath);
 };
 
 const isLocalDependency = (
-  locator: string,
   name: string,
+  pkg: Package,
+  deps: PackageDependencyMap,
   options: LnkrOptions,
 ): boolean => {
   const ignoreExt = '.tgz';
 
-  if (options && options.cache && options.cache.hasOwnProperty(name)) {
+  if (options && options.overrideLinks && options.overrideLinks.hasOwnProperty(name)) {
     return true;
   }
 
-  if (options && options.scopeRename && options.packages) {
-    return isScopedDependency(name, options);
-  }
-
-  if (options && options.packages) {
-    return options.packages.indexOf(name) !== -1;
-  }
-
-  return (
-    (locator.indexOf('.') === 0
-      || locator.indexOf('/') === 0
-    || locator.indexOf('file:') === 0)
-    && locator.lastIndexOf(ignoreExt) !== locator.length - ignoreExt.length
-  );
-};
-
-const isScopedDependency = (
-  name: string,
-  options: LnkrOptions,
-): boolean => {
-  return name.indexOf('@') !== -1
-    && options.packages
-    && options.packages.indexOf(name) !== -1;
+  return ((deps[name].indexOf('.') === 0
+      || deps[name].indexOf('/') === 0
+      || deps[name].indexOf('file:') === 0)
+    && deps[name].lastIndexOf(ignoreExt) !== deps[name].length - ignoreExt.length);
 };
 
 /*

@@ -227,8 +227,6 @@ var unlinkLinks = function (links) {
 };
 var listLinksRecursive = function (pkg, options) {
     var packageLinks = {};
-    options = options || {};
-    options.cache = new Map();
     var _listLinksRecursive = function (nextPkg) {
         if (packageLinks.hasOwnProperty(nextPkg.dirPath)) {
             Promise.resolve(packageLinks[nextPkg.dirPath]);
@@ -238,7 +236,7 @@ var listLinksRecursive = function (pkg, options) {
                 .then(function (links) {
                 packageLinks[nextPkg.dirPath] = packageLinks[nextPkg.dirPath] || [];
                 packageLinks[nextPkg.dirPath] = packageLinks[nextPkg.dirPath].concat(links);
-                options.cache = Object.assign({}, options.cache, keyBy(links, 'name'));
+                options.overrideLinks = Object.assign({}, options.overrideLinks, keyBy(links, 'name'));
                 var linksToRecurse = links.map(function (lnk) { return lnk.to; });
                 return map(linksToRecurse, 500, readPackage);
             })
@@ -253,7 +251,7 @@ var listLinksRecursive = function (pkg, options) {
     });
 };
 var listLinks = function (pkg, options) {
-    var localDependencies = getPackageDependencies(pkg, options);
+    var localDependencies = getPackageLinkedDependencies(pkg, options);
     return map(localDependencies, 500, realPath)
         .then(function (paths) { return sortBy(uniqBy(paths || [])); }, function (pth) { return path; })
         .then(function (sortedPaths) { return map(sortedPaths, 500, readPackage); })
@@ -274,11 +272,11 @@ var filterAllPathsToRemove = function (links) {
         return filter(uniqueLinks, function (lnk, index) { return isLinkResults[index] === true; });
     });
 };
-var getPackageDependencies = function (pkg, options) {
+var getPackageLinkedDependencies = function (pkg, options) {
     assert.equal(isObject(pkg), true, 'pkg should be an object');
     var deps = getDependencyMap(pkg);
     return Object.keys(deps)
-        .filter(function (name) { return isLocalDependency(deps[name], name, options); })
+        .filter(function (name) { return isLocalDependency(name, pkg, deps, options); })
         .map(function (name) { return getLocalDependency(name, pkg, deps, options); });
 };
 var getDependencyMap = function (pkg) {
@@ -296,39 +294,22 @@ var getDependencyLink = function (linkingPkg, targetPkg) {
     };
 };
 var getLocalDependency = function (name, pkg, deps, options) {
-    if (options && options.cache && options.cache.hasOwnProperty(name)) {
-        return options.cache[name].to;
+    if (options && options.overrideLinks && options.overrideLinks.hasOwnProperty(name)) {
+        return options.overrideLinks[name].to;
     }
     var pkgPath = deps[name];
-    pkgPath = pkgPath.replace(/^file:\/\//g, '');
-    if (options && options.scopeRename) {
-        return path.resolve(options.cwd, options.scopeRename);
-    }
-    if (options && options.packages && options.packages.length > 0) {
-        return path.resolve(options.cwd, name);
-    }
+    pkgPath = pkgPath.replace(/^file:/g, '');
     return path.resolve(pkg.dirPath, pkgPath);
 };
-var isLocalDependency = function (locator, name, options) {
+var isLocalDependency = function (name, pkg, deps, options) {
     var ignoreExt = '.tgz';
-    if (options && options.cache && options.cache.hasOwnProperty(name)) {
+    if (options && options.overrideLinks && options.overrideLinks.hasOwnProperty(name)) {
         return true;
     }
-    if (options && options.scopeRename && options.packages) {
-        return isScopedDependency(name, options);
-    }
-    if (options && options.packages) {
-        return options.packages.indexOf(name) !== -1;
-    }
-    return ((locator.indexOf('.') === 0
-        || locator.indexOf('/') === 0
-        || locator.indexOf('file:') === 0)
-        && locator.lastIndexOf(ignoreExt) !== locator.length - ignoreExt.length);
-};
-var isScopedDependency = function (name, options) {
-    return name.indexOf('@') !== -1
-        && options.packages
-        && options.packages.indexOf(name) !== -1;
+    return ((deps[name].indexOf('.') === 0
+        || deps[name].indexOf('/') === 0
+        || deps[name].indexOf('file:') === 0)
+        && deps[name].lastIndexOf(ignoreExt) !== deps[name].length - ignoreExt.length);
 };
 var getSymlinkType = function () {
     if (os.platform() === 'win32') {

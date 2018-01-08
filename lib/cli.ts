@@ -51,23 +51,26 @@ const errorSummary = (commandName: string, err: Error): void => {
 const help = (): void => {
   console.info('  Examples:');
   console.info('');
-  console.info('    lnkr                                                 # link local deps in current dir');
-  console.info('    lnkr --link                                          # link local deps in current dir');
-  console.info('    lnkr --unlink                                        # unlink only in current dir');
-  console.info('    lnkr --unlink -r                                     # unlink recursively');
+  console.info('    lnkr                                                    # link local deps in current dir');
+  console.info('    lnkr --link                                             # link local deps in current dir');
+  console.info('    lnkr --unlink                                           # unlink only in current dir');
+  console.info('    lnkr --unlink -r                                        # unlink recursively');
   console.info('');
-  console.info('    lnkr --list                                          # list all local deps, ignores link status');
   // tslint:disable-next-line max-line-length
-  console.info('    lnkr --list -r                                       # list all local deps recursively, ignoring link status');
+  console.info('    lnkr --list                                             # list all local deps, ignores link status');
+  // tslint:disable-next-line max-line-length
+  console.info('    lnkr --list -r                                          # list all local deps recursively, ignoring link status');
   console.info('');
-  console.info('    lnkr -- mydir                                        # link local deps in mydir');
-  console.info('    lnkr --unlink -- mydir                               # unlink local deps in mydir');
-  console.info('    lnkr --named pkgname ../to/pkg                       # link local dep by name/path');
-  console.info('    lnkr --named pkgname1 pkgname2 ../to/pkg             # link local deps by name/path');
-  console.info('    lnkr --unlink --named pkgname ../to/pkg              # unlink local dep by name/');
-  console.info('    lnkr --named -r pkgname ../to/pkg                    # link local deps recursively by name/');
+  console.info('    lnkr -- mydir                                           # link local deps in mydir');
+  console.info('    lnkr --unlink -- mydir                                  # unlink local deps in mydir');
+  console.info('    lnkr --override pkgname ../to/pkg                       # link local dep by pkgname to ../to/pkg');
   // tslint:disable-next-line max-line-length
-  console.info('    lnkr --named -r @scope/pkgname pkgname ../to/pkg     # link local deps recursively by name/ with npm @scope');
+  console.info('    lnkr --override pkgname1 ../to/pkg1 pkgname2 ../to/pkg2 # link local deps pkgname1 to ../to/pkg1 and pkgname2 to ../to/pkg2');
+  console.info('    lnkr --unlink --override pkgname ../to/pkg              # unlink local dep by pkgname');
+  // tslint:disable-next-line max-line-length
+  console.info('    lnkr --override -r pkgname ../to/pkg                    # link local deps recursively by by pkgname to ../to/pkg');
+  // tslint:disable-next-line max-line-length
+  console.info('    lnkr --override -r @scope/pkgname pkgname ../to/pkg     # link local deps recursively by name/ with npm @scope');
   console.info('');
   console.info('  Formats:');
   console.info('');
@@ -82,12 +85,13 @@ const help = (): void => {
 
 program
   .usage('[options] <dir>')
+  .option('--inspect')
   .option('-f, --format [format]', 'Specify output format string')
   .option('-l, --link', 'Link local dependencies')
   .option('-u, --unlink', 'Unlink local dependencies')
   .option('-i, --list', 'List linked dependencies')
   .option('-r, --recursive', 'Execute command recursively')
-  .option('-n, --named', 'Link only named packages, last argument is cwd');
+  .option('-o, --override', 'Override named package.json dependencies and devDependencies with specified links');
 program.on('--help', help);
 program.parse(process.argv);
 
@@ -105,27 +109,34 @@ if (program.unlink) {
   fn = list;
 }
 
-const named = !!program.named;
+const override = !!program.override;
 const recursive = !!program.recursive;
 
 program.args[0] = program.args[0] || '';
 let dir = path.resolve(process.cwd(), program.args[0]) || process.cwd();
-if (named) {
+if (override) {
   dir = process.cwd();
 }
 
 const format = program.format;
 
 const options: LnkrOptions = {
-  cwd: program.args[program.args.length - 1],
   recursive,
 };
 
-if (named) {
-  const renameIndex = program.args.findIndex((arg) => arg.indexOf('@') !== -1);
-  const rename = renameIndex !== -1 ? program.args[renameIndex + 1] : null;
-  options.packages = program.args.slice(0, program.args.length - 1);
-  options.scopeRename = rename;
+if (override) {
+  const namedArgs = program.args.join(' ').split(' ');
+  options.overrideLinks = new Map<string, Link>();
+  for (let i = 0; i <= namedArgs.length - 2; i += 2) {
+    const overrideLink = {
+      to: namedArgs[i + 1],
+      from: '',
+      name: namedArgs[i],
+      target: `${namedArgs[i]}@${namedArgs[i + 1]}`,
+      realized: `${namedArgs[i]}@${namedArgs[i + 1]}`,
+    };
+    options.overrideLinks.set(overrideLink.name, overrideLink);
+  }
 }
 
 fn(dir, options)

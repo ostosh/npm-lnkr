@@ -155,8 +155,6 @@ var unlinkLinks = function (links) {
 };
 var listLinksRecursive = function (pkg, options) {
     var packageLinks = {};
-    options = options || {};
-    options.cache = new Map();
     var _listLinksRecursive = function (nextPkg) {
         if (packageLinks.hasOwnProperty(nextPkg.dirPath)) {
             Promise.resolve(packageLinks[nextPkg.dirPath]);
@@ -166,7 +164,7 @@ var listLinksRecursive = function (pkg, options) {
                 .then(function (links) {
                 packageLinks[nextPkg.dirPath] = packageLinks[nextPkg.dirPath] || [];
                 packageLinks[nextPkg.dirPath] = packageLinks[nextPkg.dirPath].concat(links);
-                options.cache = Object.assign({}, options.cache, keyBy(links, 'name'));
+                options.overrideLinks = Object.assign({}, options.overrideLinks, keyBy(links, 'name'));
                 var linksToRecurse = links.map(function (lnk) { return lnk.to; });
                 return map(linksToRecurse, 500, readPackage);
             })
@@ -181,7 +179,7 @@ var listLinksRecursive = function (pkg, options) {
     });
 };
 var listLinks = function (pkg, options) {
-    var localDependencies = getPackageDependencies(pkg, options);
+    var localDependencies = getPackageLinkedDependencies(pkg, options);
     return map(localDependencies, 500, realPath)
         .then(function (paths) { return sortBy(uniqBy(paths || [])); }, function (pth) { return path; })
         .then(function (sortedPaths) { return map(sortedPaths, 500, readPackage); })
@@ -202,11 +200,11 @@ var filterAllPathsToRemove = function (links) {
         return filter(uniqueLinks, function (lnk, index) { return isLinkResults[index] === true; });
     });
 };
-var getPackageDependencies = function (pkg, options) {
+var getPackageLinkedDependencies = function (pkg, options) {
     assert.equal(isObject(pkg), true, 'pkg should be an object');
     var deps = getDependencyMap(pkg);
     return Object.keys(deps)
-        .filter(function (name) { return isLocalDependency(deps[name], name, options); })
+        .filter(function (name) { return isLocalDependency(name, pkg, deps, options); })
         .map(function (name) { return getLocalDependency(name, pkg, deps, options); });
 };
 var getDependencyMap = function (pkg) {
@@ -224,39 +222,22 @@ var getDependencyLink = function (linkingPkg, targetPkg) {
     };
 };
 var getLocalDependency = function (name, pkg, deps, options) {
-    if (options && options.cache && options.cache.hasOwnProperty(name)) {
-        return options.cache[name].to;
+    if (options && options.overrideLinks && options.overrideLinks.hasOwnProperty(name)) {
+        return options.overrideLinks[name].to;
     }
     var pkgPath = deps[name];
-    pkgPath = pkgPath.replace(/^file:\/\//g, '');
-    if (options && options.scopeRename) {
-        return path.resolve(options.cwd, options.scopeRename);
-    }
-    if (options && options.packages && options.packages.length > 0) {
-        return path.resolve(options.cwd, name);
-    }
+    pkgPath = pkgPath.replace(/^file:/g, '');
     return path.resolve(pkg.dirPath, pkgPath);
 };
-var isLocalDependency = function (locator, name, options) {
+var isLocalDependency = function (name, pkg, deps, options) {
     var ignoreExt = '.tgz';
-    if (options && options.cache && options.cache.hasOwnProperty(name)) {
+    if (options && options.overrideLinks && options.overrideLinks.hasOwnProperty(name)) {
         return true;
     }
-    if (options && options.scopeRename && options.packages) {
-        return isScopedDependency(name, options);
-    }
-    if (options && options.packages) {
-        return options.packages.indexOf(name) !== -1;
-    }
-    return ((locator.indexOf('.') === 0
-        || locator.indexOf('/') === 0
-        || locator.indexOf('file:') === 0)
-        && locator.lastIndexOf(ignoreExt) !== locator.length - ignoreExt.length);
-};
-var isScopedDependency = function (name, options) {
-    return name.indexOf('@') !== -1
-        && options.packages
-        && options.packages.indexOf(name) !== -1;
+    return ((deps[name].indexOf('.') === 0
+        || deps[name].indexOf('/') === 0
+        || deps[name].indexOf('file:') === 0)
+        && deps[name].lastIndexOf(ignoreExt) !== deps[name].length - ignoreExt.length);
 };
 var getSymlinkType = function () {
     if (os.platform() === 'win32') {
@@ -462,21 +443,21 @@ var errorSummary = function (commandName, err) {
 var help = function () {
     console.info('  Examples:');
     console.info('');
-    console.info('    lnkr                                                 # link local deps in current dir');
-    console.info('    lnkr --link                                          # link local deps in current dir');
-    console.info('    lnkr --unlink                                        # unlink only in current dir');
-    console.info('    lnkr --unlink -r                                     # unlink recursively');
+    console.info('    lnkr                                                    # link local deps in current dir');
+    console.info('    lnkr --link                                             # link local deps in current dir');
+    console.info('    lnkr --unlink                                           # unlink only in current dir');
+    console.info('    lnkr --unlink -r                                        # unlink recursively');
     console.info('');
-    console.info('    lnkr --list                                          # list all local deps, ignores link status');
-    console.info('    lnkr --list -r                                       # list all local deps recursively, ignoring link status');
+    console.info('    lnkr --list                                             # list all local deps, ignores link status');
+    console.info('    lnkr --list -r                                          # list all local deps recursively, ignoring link status');
     console.info('');
-    console.info('    lnkr -- mydir                                        # link local deps in mydir');
-    console.info('    lnkr --unlink -- mydir                               # unlink local deps in mydir');
-    console.info('    lnkr --named pkgname ../to/pkg                       # link local dep by name/path');
-    console.info('    lnkr --named pkgname1 pkgname2 ../to/pkg             # link local deps by name/path');
-    console.info('    lnkr --unlink --named pkgname ../to/pkg              # unlink local dep by name/');
-    console.info('    lnkr --named -r pkgname ../to/pkg                    # link local deps recursively by name/');
-    console.info('    lnkr --named -r @scope/pkgname pkgname ../to/pkg     # link local deps recursively by name/ with npm @scope');
+    console.info('    lnkr -- mydir                                           # link local deps in mydir');
+    console.info('    lnkr --unlink -- mydir                                  # unlink local deps in mydir');
+    console.info('    lnkr --override pkgname ../to/pkg                       # link local dep by pkgname to ../to/pkg');
+    console.info('    lnkr --override pkgname1 ../to/pkg1 pkgname2 ../to/pkg2 # link local deps pkgname1 to ../to/pkg1 and pkgname2 to ../to/pkg2');
+    console.info('    lnkr --unlink --override pkgname ../to/pkg              # unlink local dep by pkgname');
+    console.info('    lnkr --override -r pkgname ../to/pkg                    # link local deps recursively by by pkgname to ../to/pkg');
+    console.info('    lnkr --override -r @scope/pkgname pkgname ../to/pkg     # link local deps recursively by name/ with npm @scope');
     console.info('');
     console.info('  Formats:');
     console.info('');
@@ -490,12 +471,13 @@ var help = function () {
 };
 program
     .usage('[options] <dir>')
+    .option('--inspect')
     .option('-f, --format [format]', 'Specify output format string')
     .option('-l, --link', 'Link local dependencies')
     .option('-u, --unlink', 'Unlink local dependencies')
     .option('-i, --list', 'List linked dependencies')
     .option('-r, --recursive', 'Execute command recursively')
-    .option('-n, --named', 'Link only named packages, last argument is cwd');
+    .option('-o, --override', 'Override named package.json dependencies and devDependencies with specified links');
 program.on('--help', help);
 program.parse(process.argv);
 var command = 'link';
@@ -512,23 +494,30 @@ if (program.unlink) {
 else if (program.list) {
     fn = lib_1.list;
 }
-var named = !!program.named;
+var override = !!program.override;
 var recursive = !!program.recursive;
 program.args[0] = program.args[0] || '';
 var dir = path.resolve(process.cwd(), program.args[0]) || process.cwd();
-if (named) {
+if (override) {
     dir = process.cwd();
 }
 var format = program.format;
 var options = {
-    cwd: program.args[program.args.length - 1],
     recursive: recursive,
 };
-if (named) {
-    var renameIndex = program.args.findIndex(function (arg) { return arg.indexOf('@') !== -1; });
-    var rename = renameIndex !== -1 ? program.args[renameIndex + 1] : null;
-    options.packages = program.args.slice(0, program.args.length - 1);
-    options.scopeRename = rename;
+if (override) {
+    var namedArgs = program.args.join(' ').split(' ');
+    options.overrideLinks = new Map();
+    for (var i = 0; i <= namedArgs.length - 2; i += 2) {
+        var overrideLink = {
+            to: namedArgs[i + 1],
+            from: '',
+            name: namedArgs[i],
+            target: namedArgs[i] + "@" + namedArgs[i + 1],
+            realized: namedArgs[i] + "@" + namedArgs[i + 1],
+        };
+        options.overrideLinks.set(overrideLink.name, overrideLink);
+    }
 }
 fn(dir, options)
     .then(function (results) {

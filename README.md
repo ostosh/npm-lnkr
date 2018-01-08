@@ -19,42 +19,26 @@ npm install -g npm-lnkr
  *
  * @interface LnkrOptions
  */
- 
+/**
+ * Options for link, unlink and list routines.
+ *
+ * @interface LnkrOptions
+ */
 export interface LnkrOptions {
-    /**
-     * Run routine recursively throughout. Defaults to false.
-     * @name LnkrOptions#recursive
-     * @type {boolean}
-     */
-    recursive?: boolean;
 
-    /**
-     * Specify packages to link, unlink and list outside of root package.json.
-     * @name LnkrOptions#cache
-     * @type {Map<String, Link>}
-     */
-    cache?: Map<string, Link>;
+  /**
+   * Run routine recursively throughout. Defaults to false.
+   * @name LnkrOptions#recursive
+   * @type {boolean}
+   */
+  recursive?: boolean;
 
-    /**
-     * Deprecated
-     * @name LnkrOptions#cwd
-     * @type {string}
-     */
-    cwd?: string;
-
-    /**
-     * Deprecated
-     * @name LnkrOptions#packages
-     * @type {string[]}
-     */
-    packages?: string[];
-
-    /**
-     * Deprecated
-     * @name LnkrOptions#scopeRename
-     * @type {string}
-     */
-    scopeRename?: string;
+  /**
+   * Specify packages.json dependencies to override with links.
+   * @name LnkrOptions#cache
+   * @type {Map<String, Link>}
+   */
+  overrideLinks?: Map<string, Link>;
 }
 
 /**
@@ -168,7 +152,7 @@ lnkr --help
   -u, --unlink                      Unlink local dependencies
   -i, --list                        List local dependencies
   -r, --recursive                   Execute command recursively
-  -n, --named  pkg-0 ... pkg-n     Execute command on listed packages only
+  -n, --override  pkg-name-0 pkg-path-0 ... pkg-name-n pkg-path-n  Override all package.json dependencies with mapping provided
   -f=[format], --format=[format]    Set output format
 
   Formats:
@@ -178,7 +162,6 @@ lnkr --help
     %h: relative real path to symlink target
     %H: absolute real path to symlink target
 
-
   Examples:
 
     lnkr                                                 # link local deps in package.json in current dir
@@ -187,16 +170,18 @@ lnkr --help
     lnkr unlink                                          # unlink only in package.json in current dir
     lnkr unlink -r                                       # unlink recursively in package.json in current dir
 
-    lnkr list                                            # list all local deps in package.json in current dir
-    lnkr list -r                                         # list all local deps recursively in package.json in current dir
+    lnkr list                                               # list all local deps in package.json in current dir
+    lnkr list -r                                            # list all local deps recursively in package.json in current dir
 
-    lnkr -- mydir                                        # link local deps in package.json in mydir
-    lnkr unlink -- mydir                                 # unlink local deps in package.json in mydir
-    lnkr --named pkgname ../to/pkg                       # link local dep by name/path
-    lnkr --named pkgname1 pkgname2 ../to/pkg             # link local deps by name/path
-    lnkr unlink --named pkgname ../to/pkg                # unlink local dep by name/
-    lnkr --named -r pkgname ../to/pkg                    # link local deps recursively by name/
-    lnkr --named -r @scope/pkgname pkgname ../to/pkg     # link local deps recursively by name/ with npm @scope
+    lnkr -- mydir                                           # link local deps in package.json in mydir
+    lnkr unlink -- mydir                                    # unlink local deps in package.json in mydir
+    lnkr -- mydir                                           # link local deps in mydir
+    lnkr --unlink -- mydir                                  # unlink local deps in mydir
+    lnkr --override pkgname ../to/pkg                       # link local dep by pkgname to ../to/pkg
+    lnkr --override pkgname1 ../to/pkg1 pkgname2 ../to/pkg2 # link local deps pkgname1 to ../to/pkg1 and pkgname2 to ../to/pkg2
+    lnkr --unlink --override pkgname ../to/pkg              # unlink local dep by pkgname
+    lnkr --override -r pkgname ../to/pkg                    # link local deps recursively by by pkgname to ../to/pkg
+    lnkr --override -r @scope/pkgname pkgname ../to/pkg     # link local deps recursively by name/ with npm @scope
 
     relative paths are relative to cwd
 ```
